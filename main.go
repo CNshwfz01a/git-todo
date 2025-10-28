@@ -29,6 +29,16 @@ func getCurrentBranch() string {
 	return strings.TrimSpace(out.String())
 }
 
+// 根据开始和结尾字符获取字符串内容
+func getInputByDelimiters(start, end, content string) string {
+	startIndex := strings.Index(content, start)
+	endIndex := strings.Index(content, end)
+	if startIndex == -1 || endIndex == -1 || startIndex >= endIndex {
+		return ""
+	}
+	return content[startIndex+len(start) : endIndex]
+}
+
 func jsonFileToStruct(path string) (todoList, string) {
 	var list todoList
 	jsonFile, err := os.Open(path)
@@ -48,6 +58,7 @@ func jsonFileToStruct(path string) (todoList, string) {
 }
 
 func readFromJsonFile(path string) (int, string, []todoList) {
+	// fmt.Println("正在读取代办文件:", path)
 	var list []todoList
 	//判断文件是否存在
 	_, err := os.Stat(path)
@@ -72,6 +83,7 @@ func readFromJsonFile(path string) (int, string, []todoList) {
 	}
 	json.Unmarshal(jsonData, &list)
 	// fmt.Println(list)
+	// fmt.Println("代办文件读取成功")
 	return 3, "success", list
 }
 
@@ -97,7 +109,7 @@ func writeStructDataToJsonFile(list todoList) {
 		fmt.Println("读取代办文件失败:", message)
 		return
 	}
-	encoder := json.NewEncoder(os.Stdout)
+	// encoder := json.NewEncoder(os.Stdout)
 	//获取当前最大id
 	maxId := 0
 	for _, item := range data {
@@ -107,8 +119,9 @@ func writeStructDataToJsonFile(list todoList) {
 	}
 	list.Id = maxId + 1
 	data = append(data, list)
-	encoder.Encode(data)
+	// encoder.Encode(data)
 	//写入文件
+	// fmt.Println("正在写入代办文件:", filePath)
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		fmt.Println("error marshalling json data")
@@ -120,6 +133,7 @@ func writeStructDataToJsonFile(list todoList) {
 		fmt.Println("error writing json data to file")
 		return
 	}
+	fmt.Println("代办添加成功")
 }
 
 func list() {
@@ -134,10 +148,10 @@ func list() {
 		fmt.Println("读取代办文件失败:", message)
 		// return
 	}
-	fmt.Println("代办列表如下:", data)
+	// fmt.Println("代办列表如下:", data)
 	//循环打印
 	for _, item := range data {
-		fmt.Printf("序号:%d 名称:%s 内容:%s 是否完成:%t\n", item.Id, item.Content, item.IsDone)
+		fmt.Printf("%d %s 完成:%t\n", item.Id, item.Content, item.IsDone)
 	}
 }
 
@@ -206,6 +220,7 @@ func delete(Id int) {
 		fmt.Println("error writing json data to file")
 		return
 	}
+	fmt.Println("序号", Id, "代办删除成功")
 }
 
 func main() {
@@ -226,18 +241,27 @@ func main() {
 	case "list":
 		list()
 	case "add":
+		//判断是否有内容参数
+		if len(input) < 3 {
+			fmt.Println("请提供代办内容")
+			return
+		}
 		//获取"<>"中的内容
-		content := strings.Trim(input[2], "<>")
+		content := getInputByDelimiters("<", ">", input[2])
+		if content == "" {
+			fmt.Println("请提供正确格式的代办内容，使用<>包裹内容")
+			return
+		}
 		add(content)
 	case "done":
 		//获取"[]"中的内容并转换为int
-		idStr := strings.Trim(input[2], "[]")
+		idStr := getInputByDelimiters("[", "]", input[2])
 		var id int
 		fmt.Sscanf(idStr, "%d", &id)
 		done(id)
 	case "delete":
 		//获取"[]"中的内容并转换为int
-		idStr := strings.Trim(input[2], "[]")
+		idStr := getInputByDelimiters("[", "]", input[2])
 		var id int
 		fmt.Sscanf(idStr, "%d", &id)
 		delete(id)
