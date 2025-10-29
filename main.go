@@ -209,6 +209,10 @@ func delete(Id int) {
 			break
 		}
 	}
+	//重新排序数组
+	for i := range data {
+		data[i].Id = i + 1
+	}
 	//写入文件
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
